@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#3b82f6',
+                            dark: '#2563eb'
+                        },
+                        secondary: {
+                            light: '#10b981',
+                            dark: '#059669'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 2s infinite'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bar {
+            transition: height 0.3s ease, background-color 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+            position: relative;
+        }
+        
+        .array-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 400px;
+            gap: 2px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .comparison-bar {
+            background-color: #f59e0b !important;
+        }
+        
+        .sorted-bar {
+            background-color: #10b981 !important;
+        }
+        
+        .pivot-bar {
+            background-color: #8b5cf6 !important;
+        }
+        
+        .swapping-bar {
+            background-color: #ef4444 !important;
+        }
+        
+        .min-bar {
+            background-color: #ec4899 !important;
+        }
+        
+        @keyframes highlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .highlight {
+            animation: highlight 0.5s ease;
+        }
+        
+        .complexity-card {
+            transition: all 0.3s ease;
+        }
+        
+        .complexity-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tooltip {
+            position: relative;
+        }
+        
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .array-container {
+                height: 300px;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-primary-dark dark:text-primary-light">
+                <i class="fas fa-sort-amount-down-alt mr-2"></i>
+                Sorting Simulator
+            </h1>
+            <button id="theme-toggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:inline"></i>
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="array-container" id="array-container"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                        <span>Normal</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
+                        <span>Comparing</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                        <span>Swapping</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                        <span>Sorted</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-purple-500 rounded-full mr-2"></div>
+                        <span>Pivot</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-pink-500 rounded-full mr-2"></div>
+                        <span>Minimum</span>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4">Controls</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 controls-grid">
+                        <div>
+                            <label for="algorithm" class="block text-sm font-medium mb-1">Algorithm</label>
+                            <select id="algorithm" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700">
+                                <option value="bubble">Bubble Sort</option>
+                                <option value="selection">Selection Sort</option>
+                                <option value="insertion">Insertion Sort</option>
+                                <option value="merge">Merge Sort</option>
+                                <option value="quick">Quick Sort</option>
+                                <option value="heap">Heap Sort</option>
+                                <option value="counting">Counting Sort</option>
+                                <option value="radix">Radix Sort</option>
+                                <option value="bucket">Bucket Sort</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="array-size" class="block text-sm font-medium mb-1">Array Size</label>
+                            <input type="range" id="array-size" min="5" max="100" value="20" class="w-full">
+                            <div class="flex justify-between text-xs">
+                                <span>5</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="sort-speed" class="block text-sm font-medium mb-1">Sorting Speed</label>
+                            <input type="range" id="sort-speed" min="1" max="100" value="50" class="w-full">
+                            <div class="flex justify-between text-xs">
+                                <span>Slow</span>
+                                <span>Fast</span>
+                            </div>
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button id="generate-array" class="bg-primary-light dark:bg-primary-dark text-white px-4 py-2 rounded-md hover:bg-primary-dark dark:hover:bg-primary-light transition-colors flex-1">
+                                <i class="fas fa-random mr-2"></i>Generate Array
+                            </button>
+                            <button id="start-sorting" class="bg-secondary-light dark:bg-secondary-dark text-white px-4 py-2 rounded-md hover:bg-secondary-dark dark:hover:bg-secondary-light transition-colors flex-1">
+                                <i class="fas fa-play mr-2"></i>Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Custom Array</h2>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <label for="custom-array" class="block text-sm font-medium mb-1">Enter comma-separated numbers</label>
+                            <input type="text" id="custom-array" placeholder="e.g., 5,3,8,1,2" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700">
+                        </div>
+                        <button id="use-custom-array" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors self-end md:self-auto">
+                            <i class="fas fa-check mr-2"></i>Use This Array
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-4">Algorithm Information</h2>
+                    <div id="algorithm-info" class="space-y-4">
+                        <div>
+                            <h3 class="font-medium">Bubble Sort</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-300">Repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 grid grid-cols-1 gap-4">
+                        <div class="complexity-card bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-medium mb-2">Time Complexity</h4>
+                            <div class="flex justify-between text-sm">
+                                <span>Best: <span id="time-best" class="font-bold">O(n)</span></span>
+                                <span>Average: <span id="time-avg" class="font-bold">O(n²)</span></span>
+                                <span>Worst: <span id="time-worst" class="font-bold">O(n²)</span></span>
+                            </div>
+                        </div>
+                        <div class="complexity-card bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-medium mb-2">Space Complexity</h4>
+                            <div class="text-sm">
+                                <span>Worst: <span id="space-worst" class="font-bold">O(1)</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Sorting Statistics</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Comparisons:</span>
+                            <span id="comparisons" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Swaps:</span>
+                            <span id="swaps" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Time:</span>
+                            <span id="time" class="font-bold">0 ms</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Status:</span>
+                            <span id="status" class="font-bold">Ready</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h3 class="font-medium mb-2">Algorithm Comparison</h3>
+                        <div class="tooltip">
+                            <button id="compare-algorithms" class="w-full bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition-colors">
+                                <i class="fas fa-chart-bar mr-2"></i>Compare Performance
+                            </button>
+                            <span class="tooltip-text">This will run all algorithms with the current array and compare their performance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const arrayContainer = document.getElementById('array-container');
+            const algorithmSelect = document.getElementById('algorithm');
+            const arraySizeInput = document.getElementById('array-size');
+            const sortSpeedInput = document.getElementById('sort-speed');
+            const generateArrayBtn = document.getElementById('generate-array');
+            const startSortingBtn = document.getElementById('start-sorting');
+            const customArrayInput = document.getElementById('custom-array');
+            const useCustomArrayBtn = document.getElementById('use-custom-array');
+            const themeToggle = document.getElementById('theme-toggle');
+            const compareAlgorithmsBtn = document.getElementById('compare-algorithms');
+            
+            // Stats elements
+            const comparisonsElement = document.getElementById('comparisons');
+            const swapsElement = document.getElementById('swaps');
+            const timeElement = document.getElementById('time');
+            const statusElement = document.getElementById('status');
+            
+            // Algorithm info elements
+            const algorithmInfoElement = document.getElementById('algorithm-info');
+            const timeBestElement = document.getElementById('time-best');
+            const timeAvgElement = document.getElementById('time-avg');
+            const timeWorstElement = document.getElementById('time-worst');
+            const spaceWorstElement = document.getElementById('space-worst');
+            
+            // State variables
+            let array = [];
+            let isSorting = false;
+            let sortingSpeed = 50;
+            let animationQueue = [];
+            let animationTimeout = null;
+            let stats = {
+                comparisons: 0,
+                swaps: 0,
+                startTime: null,
+                endTime: null
+            };
+            
+            // Algorithm information
+            const algorithmData = {
+                bubble: {
+                    name: "Bubble Sort",
+                    description: "Repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order.",
+                    time: {
+                        best: "O(n)",
+                        average: "O(n²)",
+                        worst: "O(n²)"
+                    },
+                    space: "O(1)"
+                },
+                selection: {
+                    name: "Selection Sort",
+                    description: "Divides the input list into two parts: a sorted sublist and an unsorted sublist. It repeatedly selects the smallest element from the unsorted sublist and moves it to the end of the sorted sublist.",
+                    time: {
+                        best: "O(n²)",
+                        average: "O(n²)",
+                        worst: "O(n²)"
+                    },
+                    space: "O(1)"
+                },
+                insertion: {
+                    name: "Insertion Sort",
+                    description: "Builds the final sorted array one item at a time by repeatedly taking the next item and inserting it into the correct position in the already-sorted part.",
+                    time: {
+                        best: "O(n)",
+                        average: "O(n²)",
+                        worst: "O(n²)"
+                    },
+                    space: "O(1)"
+                },
+                merge: {
+                    name: "Merge Sort",
+                    description: "A divide-and-conquer algorithm that divides the input array into two halves, sorts each half recursively, and then merges the two sorted halves.",
+                    time: {
+                        best: "O(n log n)",
+                        average: "O(n log n)",
+                        worst: "O(n log n)"
+                    },
+                    space: "O(n)"
+                },
+                quick: {
+                    name: "Quick Sort",
+                    description: "A divide-and-conquer algorithm that selects a 'pivot' element and partitions the array around the pivot, placing smaller elements before it and larger elements after it, then recursively sorts the subarrays.",
+                    time: {
+                        best: "O(n log n)",
+                        average: "O(n log n)",
+                        worst: "O(n²)"
+                    },
+                    space: "O(log n)"
+                },
+                heap: {
+                    name: "Heap Sort",
+                    description: "Converts the array into a max-heap, then repeatedly extracts the maximum element from the heap and places it at the end of the array.",
+                    time: {
+                        best: "O(n log n)",
+                        average: "O(n log n)",
+                        worst: "O(n log n)"
+                    },
+                    space: "O(1)"
+                },
+                counting: {
+                    name: "Counting Sort",
+                    description: "Counts the number of objects that have distinct key values, then uses arithmetic to determine the position of each key in the output sequence. Works best when the range of input values is small.",
+                    time: {
+                        best: "O(n + k)",
+                        average: "O(n + k)",
+                        worst: "O(n + k)"
+                    },
+                    space: "O(n + k)"
+                },
+                radix: {
+                    name: "Radix Sort",
+                    description: "Sorts numbers by processing individual digits from least significant to most significant, using a stable sort (like counting sort) at each digit position.",
+                    time: {
+                        best: "O(nk)",
+                        average: "O(nk)",
+                        worst: "O(nk)"
+                    },
+                    space: "O(n + k)"
+                },
+                bucket: {
+                    name: "Bucket Sort",
+                    description: "Distributes the elements of an array into a number of buckets, then sorts each bucket individually (using another algorithm or recursively applying bucket sort), and finally concatenates the buckets.",
+                    time: {
+                        best: "O(n + k)",
+                        average: "O(n + k)",
+                        worst: "O(n²)"
+                    },
+                    space: "O(n + k)"
+                }
+            };
+            
+            // Initialize
+            generateRandomArray();
+            updateAlgorithmInfo();
+            
+            // Event Listeners
+            generateArrayBtn.addEventListener('click', generateRandomArray);
+            startSortingBtn.addEventListener('click', startSorting);
+            arraySizeInput.addEventListener('input', generateRandomArray);
+            sortSpeedInput.addEventListener('input', updateSortingSpeed);
+            algorithmSelect.addEventListener('change', updateAlgorithmInfo);
+            useCustomArrayBtn.addEventListener('click', useCustomArray);
+            themeToggle.addEventListener('click', toggleTheme);
+            compareAlgorithmsBtn.addEventListener('click', compareAlgorithms);
+            
+            // Functions
+            function generateRandomArray() {
+                const size = parseInt(arraySizeInput.value);
+                array = [];
+                for (let i = 0; i < size; i++) {
+                    array.push(Math.floor(Math.random() * 100) + 1);
+                }
+                renderArray();
+                resetStats();
+            }
+            
+            function useCustomArray() {
+                const customArrayStr = customArrayInput.value.trim();
+                if (customArrayStr) {
+                    array = customArrayStr.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
+                    if (array.length > 0) {
+                        arraySizeInput.value = array.length;
+                        renderArray();
+                        resetStats();
+                    } else {
+                        alert("Please enter valid numbers separated by commas.");
+                    }
+                } else {
+                    alert("Please enter numbers separated by commas.");
+                }
+            }
+            
+            function renderArray() {
+                arrayContainer.innerHTML = '';
+                const maxHeight = Math.max(...array);
+                const containerHeight = arrayContainer.clientHeight;
+                
+                array.forEach((value, index) => {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar bg-blue-500';
+                    bar.style.height = `${(value / maxHeight) * (containerHeight - 30)}px`;
+                    bar.style.width = `${Math.max(20, (arrayContainer.clientWidth / array.length) - 2)}px`;
+                    bar.textContent = value;
+                    bar.dataset.index = index;
+                    arrayContainer.appendChild(bar);
+                });
+            }
+            
+            function updateSortingSpeed() {
+                sortingSpeed = parseInt(sortSpeedInput.value);
+            }
+            
+            function updateAlgorithmInfo() {
+                const algorithm = algorithmSelect.value;
+                const data = algorithmData[algorithm];
+                
+                algorithmInfoElement.innerHTML = `
+                    <div>
+                        <h3 class="font-medium">${data.name}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">${data.description}</p>
+                    </div>
+                `;
+                
+                timeBestElement.textContent = data.time.best;
+                timeAvgElement.textContent = data.time.average;
+                timeWorstElement.textContent = data.time.worst;
+                spaceWorstElement.textContent = data.space;
+            }
+            
+            function startSorting() {
+                if (isSorting) return;
+                
+                isSorting = true;
+                resetStats();
+                statusElement.textContent = "Sorting...";
+                stats.startTime = performance.now();
+                
+                const algorithm = algorithmSelect.value;
+                
+                switch (algorithm) {
+                    case 'bubble':
+                        bubbleSort([...array]);
+                        break;
+                    case 'selection':
+                        selectionSort([...array]);
+                        break;
+                    case 'insertion':
+                        insertionSort([...array]);
+                        break;
+                    case 'merge':
+                        mergeSort([...array]);
+                        break;
+                    case 'quick':
+                        quickSort([...array]);
+                        break;
+                    case 'heap':
+                        heapSort([...array]);
+                        break;
+                    case 'counting':
+                        countingSort([...array]);
+                        break;
+                    case 'radix':
+                        radixSort([...array]);
+                        break;
+                    case 'bucket':
+                        bucketSort([...array]);
+                        break;
+                }
+                
+                processAnimationQueue();
+            }
+            
+            function resetStats() {
+                stats = {
+                    comparisons: 0,
+                    swaps: 0,
+                    startTime: null,
+                    endTime: null
+                };
+                comparisonsElement.textContent = "0";
+                swapsElement.textContent = "0";
+                timeElement.textContent = "0 ms";
+                statusElement.textContent = "Ready";
+            }
+            
+            function updateStats() {
+                comparisonsElement.textContent = stats.comparisons;
+                swapsElement.textContent = stats.swaps;
+                
+                if (stats.startTime && stats.endTime) {
+                    timeElement.textContent = `${(stats.endTime - stats.startTime).toFixed(2)} ms`;
+                }
+            }
+            
+            function toggleTheme() {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            }
+            
+            function compareAlgorithms() {
+                if (isSorting) return;
+                
+                // This would be a more complex function to run all algorithms and compare
+                // For now, we'll just show a message
+                statusElement.textContent = "Comparison feature coming soon!";
+                setTimeout(() => {
+                    statusElement.textContent = "Ready";
+                }, 2000);
+            }
+            
+            // Animation queue functions
+            function addToAnimationQueue(animation) {
+                animationQueue.push(animation);
+            }
+            
+            function processAnimationQueue() {
+                if (animationQueue.length === 0) {
+                    isSorting = false;
+                    stats.endTime = performance.now();
+                    updateStats();
+                    statusElement.textContent = "Sorted!";
+                    return;
+                }
+                
+                const animation = animationQueue.shift();
+                const bars = document.querySelectorAll('.bar');
+                
+                if (animation.type === 'compare') {
+                    bars[animation.indices[0]].classList.add('comparison-bar');
+                    bars[animation.indices[1]].classList.add('comparison-bar');
+                    stats.comparisons++;
+                } 
+                else if (animation.type === 'swap') {
+                    const [i, j] = animation.indices;
+                    const tempHeight = bars[i].style.height;
+                    const tempText = bars[i].textContent;
+                    
+                    bars[i].style.height = bars[j].style.height;
+                    bars[i].textContent = bars[j].textContent;
+                    bars[j].style.height = tempHeight;
+                    bars[j].textContent = tempText;
+                    
+                    bars[i].classList.add('swapping-bar');
+                    bars[j].classList.add('swapping-bar');
+                    stats.swaps++;
+                }
+                else if (animation.type === 'sorted') {
+                    animation.indices.forEach(index => {
+                        bars[index].classList.add('sorted-bar');
+                    });
+                }
+                else if (animation.type === 'pivot') {
+                    bars[animation.index].classList.add('pivot-bar');
+                }
+                else if (animation.type === 'min') {
+                    bars[animation.index].classList.add('min-bar');
+                }
+                else if (animation.type === 'reset') {
+                    bars.forEach(bar => {
+                        bar.className = 'bar bg-blue-500';
+                    });
+                }
+                
+                updateStats();
+                
+                // Calculate delay based on sorting speed
+                const delay = 1000 / (sortingSpeed * 0.5 + 1); // Convert speed (1-100) to delay in ms
+                
+                animationTimeout = setTimeout(() => {
+                    // Reset styles after animation
+                    if (animation.type === 'compare' || animation.type === 'swap' || 
+                        animation.type === 'pivot' || animation.type === 'min') {
+                        bars.forEach(bar => {
+                            bar.className = 'bar bg-blue-500';
+                        });
+                    }
+                    
+                    processAnimationQueue();
+                }, delay);
+            }
+            
+            // Sorting Algorithms
+            async function bubbleSort(arr) {
+                let n = arr.length;
+                let swapped;
+                
+                do {
+                    swapped = false;
+                    for (let i = 0; i < n - 1; i++) {
+                        addToAnimationQueue({ type: 'compare', indices: [i, i + 1] });
+                        
+                        if (arr[i] > arr[i + 1]) {
+                            // Swap elements
+                            [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                            addToAnimationQueue({ type: 'swap', indices: [i, i + 1] });
+                            swapped = true;
+                        }
+                    }
+                    n--;
+                    
+                    // Mark the last element as sorted
+                    addToAnimationQueue({ type: 'sorted', indices: [n] });
+                } while (swapped);
+                
+                // Mark all elements as sorted
+                addToAnimationQueue({ type: 'sorted', indices: Array.from({ length: arr.length }, (_, i) => i) });
+            }
+            
+            async function selectionSort(arr) {
+                let n = arr.length;
+                
+                for (let i = 0; i < n - 1; i++) {
+                    let minIndex = i;
+                    addToAnimationQueue({ type: 'min', index: minIndex });
+                    
+                    for (let j = i + 1; j < n; j++) {
+                        addToAnimationQueue({ type: 'compare', indices: [minIndex, j] });
+                        
+                        if (arr[j] < arr[minIndex]) {
+                            minIndex = j;
+                            addToAnimationQueue({ type: 'min', index: minIndex });
+                        }
+                    }
+                    
+                    if (minIndex !== i) {
+                        [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+                        addToAnimationQueue({ type: 'swap', indices: [i, minIndex] });
+                    }
+                    
+                    addToAnimationQueue({ type: 'sorted', indices: [i] });
+                }
+                
+                // Mark last element as sorted
+                addToAnimationQueue({ type: 'sorted', indices: [n - 1] });
+            }
+            
+            async function insertionSort(arr) {
+                let n = arr.length;
+                
+                for (let i = 1; i < n; i++) {
+                    let key = arr[i];
+                    let j = i - 1;
+                    
+                    addToAnimationQueue({ type: 'compare', indices: [j, i] });
+                    
+                    while (j >= 0 && arr[j] > key) {
+                        arr[j + 1] = arr[j];
+                        addToAnimationQueue({ type: 'swap', indices: [j, j + 1] });
+                        j--;
+                        
+                        if (j >= 0) {
+                            addToAnimationQueue({ type: 'compare', indices: [j, i] });
+                        }
+                    }
+                    
+                    arr[j + 1] = key;
+                    addToAnimationQueue({ type: 'sorted', indices: [j + 1] });
+                }
+                
+                // Mark all elements as sorted
+                addToAnimationQueue({ type: 'sorted', indices: Array.from({ length: arr.length }, (_, i) => i) });
+            }
+            
+            async function mergeSort(arr) {
+                async function merge(left, right, startIdx) {
+                    let result = [];
+                    let leftIdx = 0;
+                    let rightIdx = 0;
+                    
+                    while (leftIdx < left.length && rightIdx < right.length) {
+                        addToAnimationQueue({ type: 'compare', indices: [startIdx + leftIdx, startIdx + left.length + rightIdx] });
+                        
+                        if (left[leftIdx] < right[rightIdx]) {
+                            result.push(left[leftIdx]);
+                            leftIdx++;
+                        } else {
+                            result.push(right[rightIdx]);
+                            rightIdx++;
+                        }
+                    }
+                    
+                    // Add remaining elements
+                    result = result.concat(left.slice(leftIdx)).concat(right.slice(rightIdx));
+                    
+                    // Update the original array and visualize
+                    for (let i = 0; i < result.length; i++) {
+                        arr[startIdx + i] = result[i];
+                        addToAnimationQueue({ type: 'swap', indices: [startIdx + i, startIdx + i] });
+                    }
+                    
+                    return result;
+                }
+                
+                async function sort(arr, startIdx = 0) {
+                    if (arr.length <= 1) {
+                        return arr;
+                    }
+                    
+                    const mid = Math.floor(arr.length / 2);
+                    const left = arr.slice(0, mid);
+                    const right = arr.slice(mid);
+                    
+                    await sort(left, startIdx);
+                    await sort(right, startIdx + mid);
+                    await merge(left, right, startIdx);
+                    
+                    return arr;
+                }
+                
+                await sort(arr);
+                addToAnimationQueue({ type: 'sorted', indices: Array.from({ length: arr.length }, (_, i) => i) });
+            }
+            
+            async function quickSort(arr, left = 0, right = arr.length - 1) {
+                if (left >= right) {
+                    if (left === right) {
+                        addToAnimationQueue({ type: 'sorted', indices: [left] });
+                    }
+                    return;
+                }
+                
+                const pivotIndex = await partition(arr, left, right);
+                addToAnimationQueue({ type: 'sorted', indices: [pivotIndex] });
+                
+                await Promise.all([
+                    quickSort(arr, left, pivotIndex - 1),
+                    quickSort(arr, pivotIndex + 1, right)
+                ]);
+            }
+            
+            async function partition(arr, left, right) {
+                const pivotValue = arr[right];
+                let pivotIndex = left;
+                
+                addToAnimationQueue({ type: 'pivot', index: right });
+                
+                for (let i = left; i < right; i++) {
+                    addToAnimationQueue({ type: 'compare', indices: [i, right] });
+                    
+                    if (arr[i] < pivotValue) {
+                        if (i !== pivotIndex) {
+                            [arr[i], arr[pivotIndex]] = [arr[pivotIndex], arr[i]];
+                            addToAnimationQueue({ type: 'swap', indices: [i, pivotIndex] });
+                        }
+                        pivotIndex++;
+                    }
+                }
+                
+                [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]];
+                addToAnimationQueue({ type: 'swap', indices: [pivotIndex, right] });
+                
+                return pivotIndex;
+            }
+            
+            async function heapSort(arr) {
+                let n = arr.length;
+                
+                // Build max heap
+                for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+                    await heapify(arr, n, i);
+                }
+                
+                // Extract elements from heap one by one
+                for (let i = n - 1; i > 0; i--) {
+                    // Move current root to end
+                    [arr[0], arr[i]] = [arr[i], arr[0]];
+                    addToAnimationQueue({ type: 'swap', indices: [0, i] });
+                    addToAnimationQueue({ type: 'sorted', indices: [i] });
+                    
+                    // Call heapify on the reduced heap
+                    await heapify(arr, i, 0);
+                }
+                
+                addToAnimationQueue({ type: 'sorted', indices: [0] });
+            }
+            
+            async function heapify(arr, n, i) {
+                let largest = i;
+                const left = 2 * i + 1;
+                const right = 2 * i + 2;
+                
+                if (left < n) {
+                    addToAnimationQueue({ type: 'compare', indices: [left, largest] });
+                    if (arr[left] > arr[largest]) {
+                        largest = left;
+                    }
+                }
+                
+                if (right < n) {
+                    addToAnimationQueue({ type: 'compare', indices: [right, largest] });
+                    if (arr[right] > arr[largest]) {
+                        largest = right;
+                    }
+                }
+                
+                if (largest !== i) {
+                    [arr[i], arr[largest]] = [arr[largest], arr[i]];
+                    addToAnimationQueue({ type: 'swap', indices: [i, largest] });
+                    
+                    await heapify(arr, n, largest);
+                }
+            }
+            
+            async function countingSort(arr) {
+                const max = Math.max(...arr);
+                const min = Math.min(...arr);
+                const range = max - min + 1;
+                const count = new Array(range).fill(0);
+                const output = new Array(arr.length);
+                
+                // Store count of each element
+                for (let i = 0; i < arr.length; i++) {
+                    count[arr[i] - min]++;
+                }
+                
+                // Change count[i] so it contains actual position of this element in output
+                for (let i = 1; i < count.length; i++) {
+                    count[i] += count[i - 1];
+                }
+                
+                // Build the output array
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    output[count[arr[i] - min] - 1] = arr[i];
+                    count[arr[i] - min]--;
+                }
+                
+                // Copy the output array to arr, so that arr now contains sorted elements
+                for (let i = 0; i < arr.length; i++) {
+                    arr[i] = output[i];
+                    addToAnimationQueue({ type: 'swap', indices: [i, i] });
+                }
+                
+                addToAnimationQueue({ type: 'sorted', indices: Array.from({ length: arr.length }, (_, i) => i) });
+            }
+            
+            async function radixSort(arr) {
+                const max = Math.max(...arr);
+                
+                // Do counting sort for every digit
+                for (let exp = 1; Math.floor(max / exp) > 0; exp *= 10) {
+                    await countingSortForRadix(arr, exp);
+                }
+                
+                addToAnimationQueue({ type: 'sorted', indices: Array.from({ length: arr.length }, (_, i) => i) });
+            }
+            
+            async function countingSortForRadix(arr, exp) {
+                const output = new Array(arr.length);
+                const count = new Array(10).fill(0);
+                
+                // Store count of occurrences in count[]
+                for (let i = 0; i < arr.length; i++) {
+                    const digit = Math.floor(arr[i] / exp) % 10;
+                    count[digit]++;
+                }
+                
+                // Change count[i] so that it contains actual position of this digit in output[]
+                for (let i = 1; i < 10; i++) {
+                    count[i] += count[i - 1];
+                }
+                
+                // Build the output array
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    const digit = Math.floor(arr[i] / exp) % 10;
+                    output[count[digit] - 1] = arr[i];
+                    count[digit]--;
+                }
+                
+                // Copy the output array to arr[]
+                for (let i = 0; i < arr.length; i++) {
+                    arr[i] = output[i];
+                    addToAnimationQueue({ type: 'swap', indices: [i, i] });
+                }
+            }
+            
+            async function bucketSort(arr) {
+                const n = arr.length;
+                if (n <= 0) return;
+                
+                // Find maximum and minimum values
+                const maxVal = Math.max(...arr);
+                const minVal = Math.min(...arr);
+                const range = maxVal - minVal;
+                
+                // Create buckets
+                const bucketSize = range / n;
+                const buckets = Array.from({ length: n }, () => []);
+                
+                // Distribute elements into buckets
+                for (let i = 0; i < n; i++) {
+                    const index = Math.min(Math.floor((arr[i] - minVal) / bucketSize), n - 1);
+                    buckets[index].push(arr[i]);
+                }
+                
+                // Sort individual buckets (using insertion sort)
+                let index = 0;
+                for (let i = 0; i < buckets.length; i++) {
+                    if (buckets[i].length > 0) {
+                        await insertionSortForBucket(buckets[i]);
+                        
+                        // Place sorted elements back into array
+                        for (let j = 0; j < buckets[i].length; j++) {
+                            arr[index] = buckets[i][j];
+                            addToAnimationQueue({ type: 'swap', indices: [index, index] });
+                            index++;
+                        }
+                    }
+                }
+                
+                addToAnimationQueue({ type: 'sorted', indices: Array.from({ length: arr.length }, (_, i) => i) });
+            }
+            
+            async function insertionSortForBucket(bucket) {
+                for (let i = 1; i < bucket.length; i++) {
+                    let key = bucket[i];
+                    let j = i - 1;
+                    
+                    while (j >= 0 && bucket[j] > key) {
+                        bucket[j + 1] = bucket[j];
+                        j--;
+                    }
+                    
+                    bucket[j + 1] = key;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
